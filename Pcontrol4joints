@@ -1,0 +1,85 @@
+function [final ,error]= Pcontrol4joints(target,testreq,
+testclient,subs1,subs2)
+testreq.JointPosition.Position=target;
+waitForServer(testclient,"Timeout",10);
+testresp = call(testclient,testreq,"Timeout",10);
+s2='STOPPED';
+s2=['"' s2 '"'];
+s2=string(s2);
+while 1
+    status= receive(subs2,10);
+    if strcmp(string(status.OpenManipulatorMovingState),s2)
+        break
+
+    end
+
+end
+k1=1;k2=1;k3=1;k4=1;
+for i=1:40
+    disp(i);
+    current_joint_states = receive(subs1,10);
+    received=[current_joint_states.Position(1);
+    current_joint_states.Position(2);
+    current_joint_states.Position(3);
+    current_joint_states.Position(4)];
+    error_prev1=target(1,1)-received(1,1);
+    error_prev2=target(2,1)-received(2,1);
+    error_prev3=target(3,1)-received(3,1);
+    error_prev4=target(4,1)-received(4,1);
+    new_j1=error_prev1*k1+target(1,1);
+    new_j2=error_prev2*k2+target(2,1);
+    new_j3=error_prev3*k3+target(3,1);
+    new_j4=error_prev4*k4+target(4,1);
+    testreq.JointPosition.Position=[new_j1;new_j2;new_j3;new_j4];
+    waitForServer(testclient,"Timeout",3);
+    testresp = call(testclient,testreq,"Timeout",3);
+    while 1
+        status= receive(subs2,10);
+        if strcmp(string(status.OpenManipulatorMovingState),s2)
+            break
+
+        end
+
+    end
+    current_joint_states = receive(subs1,10);
+    received=[current_joint_states.Position(1);
+    current_joint_states.Position(2);
+    current_joint_states.Position(3);
+    current_joint_states.Position(4)];
+    error_new1=target(1,1)-received(1,1);
+    error_new2=target(2,1)-received(2,1);
+    error_new3=target(3,1)-received(3,1);
+    error_new4=target(4,1)-received(4,1);
+    if abs(error_new1) < 0.034 && abs(error_new2) < 0.034 
+    && abs(error_new3) < 0.034 && abs(error_new4) < 0.034
+        break;
+    end
+    if error_new1>error_prev1
+        k1=k1+0.01;
+    else
+        k1=k1-0.01;
+    end
+    if error_new3>error_prev3
+        k3=k3+0.01;
+    else
+        k3=k3-0.01;
+    end
+    if error_new2>error_prev2
+        k2=k2+0.01;
+    else
+        k2=k2-0.01;
+    end
+    if error_new4>error_prev4
+        k4=k4+0.01;
+    else
+        k4=k4-0.01;
+    end
+
+end
+j1=error_new1*k1+target(1,1);
+j2=error_new2*k2+target(2,1);
+j3=error_new3*k3+target(3,1);
+j4=error_new4*k4+target(4,1);
+final=[j1;j2;j3;j4];
+error = [error_new1 error_new2 error_new3 error_new4];
+end
