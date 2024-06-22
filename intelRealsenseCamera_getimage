@@ -1,0 +1,54 @@
+% Make Pipeline object to manage streaming
+pipe = realsense.pipeline();
+% Make Colorizer object to prettify depth output
+colorizer = realsense.colorizer();
+pcl_obj = realsense.pointcloud();
+% Start streaming on an arbitrary camera with default settings
+profile = pipe.start();
+
+
+% Get streaming device's name
+dev = profile.get_device();
+name = dev.get_info(realsense.camera_info.name);
+
+% Get frames. We discard the first couple to allow
+% the camera time to settle
+for i = 1:5
+    fs = pipe.wait_for_frames();
+end
+
+% Stop streaming
+pipe.stop();
+
+% Select depth frame
+depth = fs.get_depth_frame();
+points = pcl_obj.calculate(depth);
+vertices = points.get_vertices();
+% Colorize depth frame
+color = colorizer.colorize(depth);
+
+% Get actual data and convert into a format imshow can use
+% (Color data arrives as [R, G, B, R, G, B, ...] vector)
+data = color.get_data();
+img = permute(reshape(data',[3,color.get_width(),color.get_height()]),
+[3 2 1]);
+
+% Display image
+imshow(img);
+title(sprintf("Colorized depth frame from %s", name));
+
+%% lazy snap to extract Black and white image of the test object
+BW = extractTarget(img);
+imshow(BW)
+%% extract 3D points corresponding to the test object
+xyz = vertices;
+[x,y,z] = extractTargetXYZ(xyz,BW);
+%% visualize extracted points
+xlin = linspace(min(x),max(x),100);
+ylin = linspace(min(y),max(y),100);
+[X,Y] = meshgrid(xlin,ylin);
+Z = griddata(x,y,z,X,Y,'cubic');
+surf(X,Y,Z)
+axis tight; hold on
+plot3(x,y,z,'.','MarkerSize',15)
+colorbar
