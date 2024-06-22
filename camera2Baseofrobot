@@ -1,0 +1,11 @@
+function xyz_trans = Camera2Base(x,y,z,robot1,inputConfig)
+xyz_trans=[];
+trans_pos=[];
+transformation = getTransform(robot1,inputConfig,
+'camera_link','link1');
+for i =1: length(x)
+    testpos = [x(i); y(i); z(i); 1];
+    trans_pos=transformation*testpos;
+    xyz_trans(i,1:3) = trans_pos(1:3);
+end
+end
