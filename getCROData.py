@@ -1,5 +1,5 @@
-# This code was written to get the realtime data from  Tektronix
-Model TBS1072C CRO With  Input Pulse  Settings Horizontal Scale Setting: 4μs, Record Length: 2000 points through USB and store in CSV format in PC
+# This code was written to get the real-time data from  Tektronix
+3Model TBS1072C CRO With  Input Pulse  Settings Horizontal Scale Setting: 4μs, Record Length: 2000 points through USB and store in CSV format in PC
 import pyvisa as visa
 import numpy as np
 from struct import unpack
